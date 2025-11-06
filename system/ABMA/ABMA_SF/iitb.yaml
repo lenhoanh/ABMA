@@ -1,0 +1,158 @@
+SYSTEM:
+  phase: 'train'
+  num_run: 1
+  device: "cuda:0" # "cuda:0"; "cuda:1"; "cpu"
+  gpus: [0, 1]
+  cudnn:
+    enabled: true
+    benchmark: true
+    deterministic: false
+  output:
+    log_dir: 'log'
+    tesorboard_dir: 'tensorboard'
+    checkpoint_dir: 'checkpoint'
+    visualization_dir: 'visualization'
+  neptune:
+    use: true
+  seed:
+    use: false
+    fixed: true
+    value: 2024
+
+DATASET:
+  name: 'iitb'
+
+  read_format: 'PIL' # PIL, CV2
+  image_format: 'jpg'
+
+  width: 256
+  height: 256
+  channel: 3
+  normalized: true
+
+  num_frames: 5 # input: 3 frames (1th-3th), predict 0th and 4th frame
+  # (3,256,256) => cat => (15,256,256)
+  # (3,256,256) => stack => (5,3,256,256)
+  clip_mode: 'cat' # cat, stack, list
+  clip_dim: 0
+
+  pseudo_abnormal_types: [ 'SF', 'KF', 'RF', 'Noise', 'Patch', 'Occlusion', 'Illumination' ]
+  pseudo_normal_types: [ 'A', 'B' ]
+
+  # ['Noise'] for only type
+  # ['Noise', 'Patch'] for the same type
+  # ['Noise', 'Illumination'] for different type
+  pseudo_types: [ 'SF' ]
+
+  dict_sf:
+    p: 0.001  # xac suat skip_frames: 0.002, 0.001
+    s: [2,3,4,5]  # so luong skip_frames, lay ngau nhien trong [2,..5]
+
+  train:
+    train_set: 'training'
+    bz: 4
+    shuffle: true
+    num_workers: 2
+    pin_memory: false
+    drop_last: true
+    sample_type: 'clips' #  'videos', 'clips', 'clips_by_video'
+    frame_steps: 1
+
+  test:
+    test_set: 'testing'
+    bz: 1
+    shuffle: false
+    num_workers: 2
+    pin_memory: false
+    drop_last: false
+    sample_type: 'videos' # videos', 'clips_by_video'
+    frame_steps: 1
+
+MODEL:
+  name: 'ABMA'
+  type: 'prediction'
+  method: 'ABMA_SF'
+
+  params:
+    feature_dim: 512
+    memory_dim: 512
+    memory_size: 10
+    
+    convAE: 'convAE_abma_k7'
+    loss_type: 'ICS'  # ICS, ICSG (intensity, compact, separate, gradient)
+
+TRAIN:
+  name: 'ABMA_SF'
+  begin_epoch: 0
+  end_epoch: 10
+  save_freq: 1
+  resume: false # false, true
+  dir_name: 'session_2024_02_20_20_33'
+  file_name: 'epoch_1.pth'
+
+  optimizer:
+    name: 'Adam'
+    lr: 0.0002  # 0.0002 = 2e-4  #0.0002
+    betas: [0.9, 0.999]
+    eps: 1e-8
+    weight_decay: 0.0  # Adam, SGD, RMSprop: reduce overfitting
+
+    momentum: 0.0  # SGD, RMSprop
+    nesterov: false  # SGD
+    rmsprop_alpha: 0.99  # RMSprop
+    rmsprop_centered: false  # RMSprop
+
+  lr_scheduler:
+    use: true
+    name: 'CosineAnnealingLR'
+    step_size: 20 # for StepLR
+    milestones: [20, 40] # for MultiStepLR
+    gamma: 0.1  # for StepLR, MultiStepLR
+    eta_min: 0.0 # Minimum learning rate for 'CosineAnnealingLR'
+
+  params:
+    # predict_weights: past, future
+    predict_weights: [0.5, 0.5]
+    
+    # loss_weights: loss_intensity (I), loss_compact (C), loss_separate (S)
+    loss_weights: [1.0, 0.1, 0.1]
+
+    loss_abnormal_type: 'IC' # 'I', 'IC', 'ICS' (Intensity, Compact, Separate, Diversity)
+    loss_strong_scale: 1.0
+    loss_subtle_scale: 0.3
+    memory_update_abnormal: false
+
+    finetune: false
+    start_epoch: 8
+    lr: 0.000001
+
+EVALUATE:
+  name: 'ABMA_SF'
+  dir_name:  'session_2025_04_28_13_57_33'
+  file_name: 'epoch_10.pth'
+
+  params:
+    find_tsne_cfg: false
+
+TEST:
+  name: 'ABMA_SF'
+  dir_name:  'session_2025_04_28_13_57_33'
+  file_name: 'epoch_10.pth'
+
+  plot_tsne: false
+  test_type: "all"  # all, video
+
+  plot_types: ['video']   # 'none', 'gif', 'video', 'csv'
+  export_video: false  # export video for 'video' plot_type
+  plot_video_ids: [0]   # list of selected video_ids (>=1) to plot, [-1] for all, [0] for none, [10] for visualize
+  psnr_types: ['psnr_1', 'psnr_frame'] # 'psnr_max', 'psnr_frame', 'psnr_1', 'psnr_patch'
+
+  params:
+    update_memory: false
+    alpha_list: [ 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1 ]
+    alpha_default: 0.6
+    alpha_best: 0.5
+    ano_mode: 'max'  # max, concat (use ano_weights), sum
+    ano_weights: [0.5, 0.5]  # [past_weight, future_weight] if ano_mode = concat
+
+

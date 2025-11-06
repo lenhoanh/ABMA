@@ -1,0 +1,58 @@
+# ignore all file extensions
+*.log
+*.jpg
+*.tif
+*.mp4
+*.avi
+*.png
+*.npy
+*.mat
+*.csv
+*.gz
+*.pth
+*.pytorch
+*.pt
+*.tar.gz
+*.gz
+*.tar
+*.pth.tar
+*.o
+*.pkl
+*.pyc
+#*.gif
+*.zip
+*.rar
+*.xyz
+*.xlsx
+*.exe
+*.obj
+
+# To ignore any directories named "output" in any depth, use ** before "output"
+# Do not forget the last /, otherwise it will ignore all files named "output", rather than directories
+
+# Example: **/output/
+# This would ignore: output/; DirectoryB/output/; DirectoryC/DirectoryB/output/;
+# It would not ignore a file named output, at any level
+
+cifar10/
+cifar100/
+CIFAR10/
+CIFAR100/
+cifar-10-python/
+cifar-100-python/
+**/data/
+**/dataset_shortcut/
+**/cifar10/
+**/cifar100/
+**/CIFAR10/
+**/CIFAR100/
+**/MNIST/
+**/raw/
+**/seg_weights/
+**/output/
+**/cifar-10-batches-py/
+**/__pycache__/
+**/.ipynb_checkpoints/
+**/.neptune/
+**/.idea/
+**/bak/
